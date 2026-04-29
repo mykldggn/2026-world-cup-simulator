@@ -4,13 +4,36 @@ const state = {
   scenario: "balanced",
 };
 
-const CONFED_COLORS = {
-  UEFA: ["#2d6cdf", "#84a8ff"],
-  CONMEBOL: ["#c89b2d", "#f0d485"],
-  Concacaf: ["#2ca58d", "#7addc8"],
-  AFC: ["#bf4a3d", "#f19589"],
-  CAF: ["#2f9e44", "#91d59d"],
-  OFC: ["#7d53e4", "#b59fff"],
+const CONFED_ASSETS = {
+  UEFA: {
+    name: "UEFA",
+    url: "/static/assets/federations/uefa.svg",
+  },
+  CONMEBOL: {
+    name: "CONMEBOL",
+    url: "/static/assets/federations/conmebol.svg",
+  },
+  Concacaf: {
+    name: "Concacaf",
+    url: "/static/assets/federations/concacaf.svg",
+  },
+  AFC: {
+    name: "AFC",
+    url: "/static/assets/federations/afc.svg",
+  },
+  CAF: {
+    name: "CAF",
+    url: "/static/assets/federations/caf.svg",
+  },
+  OFC: {
+    name: "OFC",
+    url: "/static/assets/federations/ofc.svg",
+  },
+};
+
+const SPECIAL_FLAG_ASSETS = {
+  "gb-eng": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20England.svg",
+  "gb-sct": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Scotland.svg",
 };
 
 const form = document.getElementById("simulation-form");
@@ -65,19 +88,43 @@ function flagFromCode(code) {
     .join("");
 }
 
-function teamBadgeStyle(team) {
-  const colors = CONFED_COLORS[team.confederation] || ["#5c6b7b", "#9aa7b4"];
-  return `--badge-start:${colors[0]};--badge-end:${colors[1]};`;
+function flagAssetUrl(code) {
+  if (!code) {
+    return "";
+  }
+  if (SPECIAL_FLAG_ASSETS[code]) {
+    return SPECIAL_FLAG_ASSETS[code];
+  }
+  return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
 }
 
 function renderTeamIdentity(team, metaText = "") {
+  const confedAsset = CONFED_ASSETS[team.confederation];
   return `
     <div class="team-identity">
-      <span class="team-badge" style="${teamBadgeStyle(team)}">${team.code}</span>
-      <span class="team-flag" aria-hidden="true">${flagFromCode(team.flagCode)}</span>
+      <div class="team-mark-stack">
+        <img
+          class="team-crest"
+          src="${confedAsset?.url || ""}"
+          alt="${confedAsset?.name || team.confederation} crest"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+          onerror="this.style.display='none'"
+        >
+        <img
+          class="team-flag-img"
+          src="${flagAssetUrl(team.flagCode)}"
+          alt="${team.name} flag"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+          onerror="this.replaceWith(Object.assign(document.createElement('span'), {className:'team-flag-fallback', textContent:'${flagFromCode(team.flagCode)}'}))"
+        >
+      </div>
       <div class="team-text">
         <strong>${team.name}</strong>
-        ${metaText ? `<span class="team-meta">${metaText}</span>` : ""}
+        <span class="team-meta">
+          ${team.code} | ${team.confederation}${metaText ? ` | ${metaText}` : ""}
+        </span>
       </div>
     </div>
   `;
@@ -159,7 +206,7 @@ function renderFeaturedTeam(featuredTeam) {
   setText("featured-heading", `Group ${featuredTeam.group} | FIFA #${featuredTeam.fifaRank}`);
   const container = document.getElementById("featured-team-card");
   container.innerHTML = `
-    ${renderTeamIdentity(featuredTeam, `${featuredTeam.confederation || ""}`)}
+    ${renderTeamIdentity(featuredTeam)}
     <div class="featured-meta">
       <span class="meta-pill">FIFA #${featuredTeam.fifaRank}</span>
       <span class="meta-pill">Anchor ${featuredTeam.rankingAnchor.toFixed(1)}</span>
