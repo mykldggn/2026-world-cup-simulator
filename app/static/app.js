@@ -82,9 +82,9 @@ const TEAM_BADGE_ASSETS = {
   UZB: "/static/assets/teams/UZB.png",
 };
 
-const SPECIAL_FLAG_ASSETS = {
-  "gb-eng": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20England.svg",
-  "gb-sct": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Scotland.svg",
+const LOCAL_FLAG_ASSETS = {
+  "gb-eng": "/static/assets/flags/gb-eng.svg",
+  "gb-sct": "/static/assets/flags/gb-sct.svg",
 };
 
 const form = document.getElementById("simulation-form");
@@ -143,10 +143,10 @@ function flagAssetUrl(code) {
   if (!code) {
     return "";
   }
-  if (SPECIAL_FLAG_ASSETS[code]) {
-    return SPECIAL_FLAG_ASSETS[code];
+  if (LOCAL_FLAG_ASSETS[code]) {
+    return LOCAL_FLAG_ASSETS[code];
   }
-  return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
+  return `/static/assets/flags/${code.toLowerCase()}.png`;
 }
 
 function teamBadgeUrl(team) {
