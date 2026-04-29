@@ -31,6 +31,57 @@ const CONFED_ASSETS = {
   },
 };
 
+const TEAM_BADGE_ASSETS = {
+  ALG: "/static/assets/teams/ALG.png",
+  ARG: "/static/assets/teams/ARG.png",
+  AUS: "/static/assets/teams/AUS.png",
+  AUT: "/static/assets/teams/AUT.svg",
+  BEL: "/static/assets/teams/BEL.svg",
+  BIH: "/static/assets/teams/BIH.svg",
+  BRA: "/static/assets/teams/BRA.png",
+  CAN: "/static/assets/teams/CAN.png",
+  CIV: "/static/assets/teams/CIV.png",
+  COD: "/static/assets/teams/COD.png",
+  COL: "/static/assets/teams/COL.png",
+  CPV: "/static/assets/teams/CPV.png",
+  CRO: "/static/assets/teams/CRO.svg",
+  CUR: "/static/assets/teams/CUR.png",
+  CZE: "/static/assets/teams/CZE.svg",
+  ECU: "/static/assets/teams/ECU.png",
+  EGY: "/static/assets/teams/EGY.png",
+  ENG: "/static/assets/teams/ENG.svg",
+  ESP: "/static/assets/teams/ESP.svg",
+  FRA: "/static/assets/teams/FRA.svg",
+  GER: "/static/assets/teams/GER.svg",
+  GHA: "/static/assets/teams/GHA.png",
+  HAI: "/static/assets/teams/HAI.png",
+  IRN: "/static/assets/teams/IRN.png",
+  IRQ: "/static/assets/teams/IRQ.png",
+  JOR: "/static/assets/teams/JOR.png",
+  JPN: "/static/assets/teams/JPN.png",
+  KOR: "/static/assets/teams/KOR.png",
+  KSA: "/static/assets/teams/KSA.png",
+  MAR: "/static/assets/teams/MAR.png",
+  MEX: "/static/assets/teams/MEX.png",
+  NED: "/static/assets/teams/NED.svg",
+  NOR: "/static/assets/teams/NOR.svg",
+  NZL: "/static/assets/teams/NZL.png",
+  PAN: "/static/assets/teams/PAN.png",
+  PAR: "/static/assets/teams/PAR.png",
+  POR: "/static/assets/teams/POR.svg",
+  QAT: "/static/assets/teams/QAT.png",
+  RSA: "/static/assets/teams/RSA.png",
+  SCO: "/static/assets/teams/SCO.svg",
+  SEN: "/static/assets/teams/SEN.png",
+  SUI: "/static/assets/teams/SUI.svg",
+  SWE: "/static/assets/teams/SWE.svg",
+  TUN: "/static/assets/teams/TUN.png",
+  TUR: "/static/assets/teams/TUR.svg",
+  URU: "/static/assets/teams/URU.png",
+  USA: "/static/assets/teams/USA.png",
+  UZB: "/static/assets/teams/UZB.png",
+};
+
 const SPECIAL_FLAG_ASSETS = {
   "gb-eng": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20England.svg",
   "gb-sct": "https://commons.wikimedia.org/wiki/Special:FilePath/Flag%20of%20Scotland.svg",
@@ -98,18 +149,24 @@ function flagAssetUrl(code) {
   return `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
 }
 
+function teamBadgeUrl(team) {
+  return TEAM_BADGE_ASSETS[team.code] || "";
+}
+
 function renderTeamIdentity(team, metaText = "") {
   const confedAsset = CONFED_ASSETS[team.confederation];
+  const badgeAsset = teamBadgeUrl(team);
   return `
     <div class="team-identity">
       <div class="team-mark-stack">
         <img
           class="team-crest"
-          src="${confedAsset?.url || ""}"
-          alt="${confedAsset?.name || team.confederation} crest"
+          src="${badgeAsset || confedAsset?.url || ""}"
+          data-fallback="${confedAsset?.url || ""}"
+          alt="${team.name} badge"
           loading="lazy"
           referrerpolicy="no-referrer"
-          onerror="this.style.display='none'"
+          onerror="if(this.dataset.fallback && this.src !== this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback='';}else{this.style.display='none';}"
         >
         <img
           class="team-flag-img"

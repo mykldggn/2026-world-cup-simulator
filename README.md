@@ -10,7 +10,7 @@ It combines a FastAPI backend, a custom hybrid rating engine, and a browser dash
 - Scores matches with a custom power model anchored to the latest confirmed FIFA ranking snapshot, then shaped by attack, midfield, defense, keeper strength, recent form, and optional host advantage.
 - Runs repeated tournament simulations to estimate title odds, group survival odds, quarterfinal/semifinal probabilities, and likely final matchups.
 - Produces a sample bracket from the same model so the dashboard feels like a real tournament room instead of a raw probability table.
-- Adds federation crest marks, national flags, ranking context, and deployment-ready project structure for portfolio and demo use.
+- Adds all 48 team badge assets, national flags, ranking context, and deployment-ready project structure for portfolio and demo use.
 
 ## Stack
 
@@ -29,6 +29,7 @@ It combines a FastAPI backend, a custom hybrid rating engine, and a browser dash
 │   ├── simulator.py
 │   └── static/
 │       ├── assets/
+│       │   ├── teams/
 │       │   └── federations/
 │       ├── app.js
 │       ├── index.html
@@ -73,7 +74,7 @@ The simulator does not depend on `scikit-learn`. Instead, it uses a custom hybri
 
 ## Visual layer
 
-- Team rows and bracket entries include bundled federation crest assets plus national flag assets.
+- Team rows and bracket entries include bundled national team badge assets, with confederation crests kept as fallback art.
 - The dashboard surfaces FIFA rank, ranking anchor, power score, qualification odds, and sample bracket output in one view.
 - The UI is designed to feel like a tournament operations desk rather than a notebook wrapper.
 
