@@ -105,6 +105,21 @@ main {
     pointer-events: none;
 }
 
+.hero-trophy {
+    position: absolute;
+    top: 12px;
+    right: clamp(24px, 7vw, 96px);
+    width: clamp(44px, 6vw, 78px);
+    height: auto;
+    opacity: 0.62;
+    filter:
+        drop-shadow(0 14px 24px rgba(0, 0, 0, 0.22))
+        drop-shadow(0 0 18px rgba(214, 165, 43, 0.24));
+    transform: rotate(6deg);
+    z-index: 0;
+    pointer-events: none;
+}
+
 .hero-copy h1 {
     margin: 0;
     max-width: 720px;
@@ -830,6 +845,13 @@ tbody tr:hover {
         right: 0;
         top: 34px;
         font-size: 5.75rem;
+    }
+
+    .hero-trophy {
+        right: 8px;
+        top: 44px;
+        width: 46px;
+        opacity: 0.52;
     }
 
     .stage-strip {

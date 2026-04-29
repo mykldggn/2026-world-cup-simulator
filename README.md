@@ -30,6 +30,7 @@ It combines a FastAPI backend, a custom hybrid rating engine, and a browser dash
 │   └── static/
 │       ├── assets/
 │       │   ├── flags/
+│       │   ├── trophy/
 │       │   ├── teams/
 │       │   └── federations/
 │       ├── app.js
@@ -76,6 +77,7 @@ The simulator does not depend on `scikit-learn`. Instead, it uses a custom hybri
 ## Visual layer
 
 - Team rows and bracket entries include bundled national team badge assets, local flag files, and confederation crests as fallback art.
+- The hero includes a bundled World Cup trophy illustration to reinforce the tournament framing.
 - The dashboard surfaces FIFA rank, ranking anchor, power score, qualification odds, and sample bracket output in one view.
 - The UI is designed to feel like a tournament operations desk with a stronger World Cup match-night theme rather than a notebook wrapper.
 
