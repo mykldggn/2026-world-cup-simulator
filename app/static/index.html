@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 World Cup Simulator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main>
+        <section class="hero-band">
+            <div class="container hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow">World Cup 2026</p>
+                    <h1>Hybrid ML/AI tournament simulator built for the 48-team format.</h1>
+                    <p class="hero-text">
+                        Monte Carlo tournament runs, group survival odds, dynamic third-place qualification,
+                        and a sample knockout bracket for the current field, anchored to the latest confirmed
+                        2026 tournament lineup and a FIFA ranking snapshot.
+                    </p>
+                    <div class="hero-chips" id="hero-chips"></div>
+                </div>
+
+                <form class="control-panel" id="simulation-form">
+                    <div class="panel-header">
+                        <h2>Simulation Controls</h2>
+                        <p id="build-status">Loading tournament model...</p>
+                    </div>
+
+                    <div class="control-row">
+                        <label for="iterations">Iterations</label>
+                        <div class="range-wrap">
+                            <input id="iterations" name="iterations" type="range" min="100" max="2000" step="100" value="400">
+                            <output id="iterations-output" for="iterations">400</output>
+                        </div>
+                    </div>
+
+                    <div class="control-row">
+                        <span>Scenario</span>
+                        <div class="segmented-control" id="scenario-control">
+                            <button type="button" class="scenario-button active" data-scenario="balanced">Balanced</button>
+                            <button type="button" class="scenario-button" data-scenario="chalk">Chalk</button>
+                            <button type="button" class="scenario-button" data-scenario="chaos">Chaos</button>
+                        </div>
+                    </div>
+
+                    <div class="control-row">
+                        <label for="featured-team">Featured team</label>
+                        <select id="featured-team" name="featuredTeam"></select>
+                    </div>
+
+                    <div class="control-row toggle-row">
+                        <div>
+                            <label for="host-advantage">Host advantage</label>
+                            <p class="control-note">Applies a small edge to USA, Mexico, and Canada.</p>
+                        </div>
+                        <input id="host-advantage" name="hostAdvantage" type="checkbox" checked>
+                    </div>
+
+                    <button type="submit" class="primary-button">Run Simulation</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="summary-band">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Simulation Snapshot</h2>
+                    <p id="summary-context">Waiting for the first run...</p>
+                </div>
+
+                <div class="summary-grid" id="summary-grid"></div>
+
+                <div class="featured-grid">
+                    <div>
+                        <div class="section-header compact">
+                            <h3>Featured Team</h3>
+                            <p id="featured-heading"></p>
+                        </div>
+                        <div id="featured-team-card" class="featured-card"></div>
+                    </div>
+                    <div>
+                        <div class="section-header compact">
+                            <h3>Model Notes</h3>
+                            <p>What the current simulation mix is saying.</p>
+                        </div>
+                        <div id="model-notes" class="note-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="band band-light">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Champion Odds</h2>
+                    <p>Top teams by title probability across the current simulation run.</p>
+                </div>
+                <div id="champion-odds" class="odds-list"></div>
+            </div>
+        </section>
+
+        <section class="band band-dark">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Group Outlook</h2>
+                    <p>Qualification and section-winning odds for every group.</p>
+                </div>
+                <div id="group-outlook" class="group-grid"></div>
+            </div>
+        </section>
+
+        <section class="band band-light">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Sample Knockout Bracket</h2>
+                    <p id="sample-summary">One tournament path generated from the same model.</p>
+                </div>
+                <div id="sample-bracket" class="bracket-grid"></div>
+            </div>
+        </section>
+
+        <section class="band band-dark">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Team Matrix</h2>
+                    <p>Power score, advancement profile, and title path for the full field.</p>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>Grp</th>
+                                <th>Rank</th>
+                                <th>Power</th>
+                                <th>Advance</th>
+                                <th>QF</th>
+                                <th>SF</th>
+                                <th>Win</th>
+                                <th>Avg Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
