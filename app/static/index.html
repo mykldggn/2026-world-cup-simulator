@@ -31,9 +31,8 @@
                     </div>
                     <h1>Hybrid ML/AI tournament simulator built for the 48-team format.</h1>
                     <p class="hero-text">
-                        Monte Carlo tournament runs, group survival odds, dynamic third-place qualification,
-                        and a sample knockout bracket for the current field, anchored to the latest confirmed
-                        2026 tournament lineup and a FIFA ranking snapshot.
+                        Monte Carlo tournament runs, venue-adjusted match models, survival odds, third-place
+                        qualification, knockout paths, and scenario comparisons for the current 2026 field.
                     </p>
                     <div class="stage-strip" aria-label="Tournament path">
                         <div class="stage-card">
@@ -41,7 +40,7 @@
                             <strong>12 Groups</strong>
                         </div>
                         <div class="stage-card">
-                            <span>Wild Card Cut</span>
+                            <span>Wildcard Cut</span>
                             <strong>Best 3rd Place</strong>
                         </div>
                         <div class="stage-card">
@@ -87,7 +86,7 @@
                     <div class="control-row toggle-row">
                         <div>
                             <label for="host-advantage">Host advantage</label>
-                            <p class="control-note">Applies a small edge to USA, Mexico, and Canada.</p>
+                            <p class="control-note">Applies a small venue boost to USA, Mexico, and Canada when they play at home.</p>
                         </div>
                         <input id="host-advantage" name="hostAdvantage" type="checkbox" checked>
                     </div>
@@ -117,10 +116,45 @@
                     <div>
                         <div class="section-header compact">
                             <h3>Model Notes</h3>
-                            <p>What the current simulation mix is saying.</p>
+                            <p>What the current mix of tournament runs is signaling.</p>
                         </div>
                         <div id="model-notes" class="note-list"></div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="band band-light">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Scenario Desk</h2>
+                    <p>Compare how the same featured team behaves under different tournament environments.</p>
+                </div>
+                <div class="insight-grid two-up">
+                    <div>
+                        <div id="scenario-compare" class="compare-grid"></div>
+                    </div>
+                    <div>
+                        <div class="section-header compact">
+                            <h3>Save or Share</h3>
+                            <p>Carry a simulation snapshot with the run ID and headline outputs.</p>
+                        </div>
+                        <div id="share-card" class="share-card"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="band band-dark">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Tournament Signals</h2>
+                    <p>Upset pressure, venue effects, and model assumptions for the current run.</p>
+                </div>
+                <div class="insight-grid three-up">
+                    <div id="upset-tracker" class="signal-card"></div>
+                    <div id="venue-lens" class="signal-card"></div>
+                    <div id="model-credibility" class="signal-card"></div>
                 </div>
             </div>
         </section>
@@ -139,7 +173,7 @@
             <div class="container">
                 <div class="section-header">
                     <h2>Group Outlook</h2>
-                    <p>Qualification and section-winning odds for every group.</p>
+                    <p>Expected group tables, advancement rates, venue context, and section volatility.</p>
                 </div>
                 <div id="group-outlook" class="group-grid"></div>
             </div>
@@ -151,7 +185,17 @@
                     <h2>Sample Knockout Bracket</h2>
                     <p id="sample-summary">One tournament path generated from the same model.</p>
                 </div>
-                <div id="sample-bracket" class="bracket-grid"></div>
+                <div id="sample-callout" class="sample-callout"></div>
+                <div class="sample-layout">
+                    <div id="sample-bracket" class="bracket-grid"></div>
+                    <aside>
+                        <div class="section-header compact">
+                            <h3>Featured Path</h3>
+                            <p>One run for the selected team, start to finish.</p>
+                        </div>
+                        <div id="featured-path" class="path-card"></div>
+                    </aside>
+                </div>
             </div>
         </section>
 
@@ -159,7 +203,7 @@
             <div class="container">
                 <div class="section-header">
                     <h2>Team Matrix</h2>
-                    <p>Power score, advancement profile, and title path for the full field.</p>
+                    <p>Power score, advancement profile, expected finish, travel, and scoring output for the full field.</p>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -171,9 +215,11 @@
                                 <th>Power</th>
                                 <th>Advance</th>
                                 <th>QF</th>
-                                <th>SF</th>
                                 <th>Win</th>
-                                <th>Avg Pts</th>
+                                <th>Exp Fin</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>Travel</th>
                             </tr>
                         </thead>
                         <tbody id="team-table"></tbody>
@@ -182,6 +228,14 @@
             </div>
         </section>
     </main>
+
+    <div id="team-modal" class="modal-shell" hidden>
+        <div class="modal-backdrop" data-close-modal="true"></div>
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="team-modal-title">
+            <button type="button" class="modal-close" id="team-modal-close" aria-label="Close team details">×</button>
+            <div id="team-modal-content"></div>
+        </div>
+    </div>
 
     <script src="/static/app.js"></script>
 </body>

@@ -9,7 +9,9 @@ It combines a FastAPI backend, a custom hybrid rating engine, and a browser dash
 - Simulates the full tournament structure: 12 groups of four, top two plus eight best third-place teams, then a Round of 32 through the final.
 - Scores matches with a custom power model anchored to the latest confirmed FIFA ranking snapshot, then shaped by attack, midfield, defense, keeper strength, recent form, and optional host advantage.
 - Runs repeated tournament simulations to estimate title odds, group survival odds, quarterfinal/semifinal probabilities, and likely final matchups.
-- Produces a sample bracket from the same model so the dashboard feels like a real tournament room instead of a raw probability table.
+- Produces a sample bracket, featured team path, and expected group tables so the dashboard feels like a real tournament room instead of a raw probability table.
+- Compares `Balanced`, `Chalk`, and `Chaos` tournament environments for the same featured team in one scenario desk.
+- Surfaces venue and travel effects, upset pressure, shareable run snapshots, and team-level scouting pages inside the browser UI.
 - Adds all 48 team badge assets, local national flags, ranking context, and a World Cup-themed visual layer for portfolio and demo use.
 
 ## Stack
@@ -70,16 +72,19 @@ The simulator does not depend on `scikit-learn`. Instead, it uses a custom hybri
    - recent form
    - host flag
 2. Match-level expected goals are derived from strength edges, tactical balance, and scenario volatility.
-3. Goals are sampled from a Poisson process.
-4. Group tables are ranked with points, head-to-head mini-table logic, goal difference, goals scored, and pre-tournament power as the final fallback.
-5. Third-place teams are ranked across groups and dynamically assigned into the Round of 32 without same-group rematches against seeded group winners.
+3. Venue nudges apply small travel, climate, altitude, and host-country adjustments before goal sampling.
+4. Goals are sampled from a Poisson process.
+5. Group tables are ranked with points, head-to-head mini-table logic, goal difference, goals scored, and pre-tournament power as the final fallback.
+6. Third-place teams are ranked across groups and dynamically assigned into the Round of 32 without same-group rematches against seeded group winners.
+7. Knockout ties use extra time plus a keeper-weighted penalty model when matches stay level.
 
 ## Visual layer
 
 - Team rows and bracket entries include bundled national team badge assets, local flag files, and confederation crests as fallback art.
 - The hero includes a bundled World Cup trophy illustration to reinforce the tournament framing.
-- The dashboard surfaces FIFA rank, ranking anchor, power score, qualification odds, and sample bracket output in one view.
+- The dashboard surfaces FIFA rank, ranking anchor, power score, qualification odds, expected group finishes, venue effects, and sample bracket output in one view.
 - The UI is designed to feel like a tournament operations desk with a stronger World Cup match-night theme rather than a notebook wrapper.
+- Each team has a modal scouting page with power breakdown, strengths, risks, common knockout opponents, and a sample tournament path.
 
 ## Scenarios
 
@@ -113,6 +118,16 @@ python3 -m unittest discover -s tests
 - `GET /api/metadata`
 - `POST /api/simulate`
 
+Key response sections from `POST /api/simulate` include:
+
+- `summary`
+- `featuredTeam`
+- `scenarioCompare`
+- `upsetTracker`
+- `venueLens`
+- `teamProfiles`
+- `sampleTournament`
+
 Example payload:
 
 ```json
@@ -145,6 +160,6 @@ Example payload:
 
 - Replace the line-strength priors with a learned pipeline from Elo, xG differential, squad age curves, or event-level match data.
 - Add per-team injury toggles and lineup downgrades.
-- Add venue-by-venue travel fatigue and climate effects.
-- Save simulation runs and compare scenarios side by side.
 - Add penalty shootout specialist weighting and set-piece danger features.
+- Add actual federation or national-team crest licensing where available instead of mixed-source public assets.
+- Layer in host-city travel routing with real distances and rest windows instead of confederation-level travel approximations.
