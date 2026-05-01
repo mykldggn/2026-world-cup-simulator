@@ -4,6 +4,10 @@ const state = {
   teamProfiles: {},
   latestSimulation: null,
   scenario: "balanced",
+  matrixSort: {
+    column: "championProbability",
+    direction: "desc",
+  },
 };
 
 const CONFED_ASSETS = {
@@ -77,9 +81,12 @@ const iterationsOutput = document.getElementById("iterations-output");
 const featuredTeamSelect = document.getElementById("featured-team");
 const hostAdvantageInput = document.getElementById("host-advantage");
 const buildStatus = document.getElementById("build-status");
+const runButton = form.querySelector('[type="submit"]');
 const modalShell = document.getElementById("team-modal");
 const modalContent = document.getElementById("team-modal-content");
 const modalCloseButton = document.getElementById("team-modal-close");
+const navLinks = Array.from(document.querySelectorAll(".nav-links a"));
+const matrixHeaders = Array.from(document.querySelectorAll("#matrix-table thead th[data-sort]"));
 
 iterationsInput.addEventListener("input", () => {
   iterationsOutput.textContent = iterationsInput.value;
@@ -87,11 +94,27 @@ iterationsInput.addEventListener("input", () => {
 
 document.querySelectorAll(".scenario-button").forEach((button) => {
   button.addEventListener("click", () => {
-    document
-      .querySelectorAll(".scenario-button")
-      .forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".scenario-button").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     state.scenario = button.dataset.scenario;
+  });
+});
+
+matrixHeaders.forEach((header) => {
+  header.addEventListener("click", () => {
+    const column = header.dataset.sort;
+    if (!column) {
+      return;
+    }
+    if (state.matrixSort.column === column) {
+      state.matrixSort.direction = state.matrixSort.direction === "asc" ? "desc" : "asc";
+    } else {
+      state.matrixSort.column = column;
+      state.matrixSort.direction = defaultSortDirection(column);
+    }
+    if (state.latestSimulation) {
+      renderTeamTable(state.latestSimulation.teamTable);
+    }
   });
 });
 
@@ -121,30 +144,31 @@ document.addEventListener("click", async (event) => {
 
   const teamTrigger = target.closest("[data-team-code]");
   if (teamTrigger instanceof HTMLElement) {
-    openTeamModal(teamTrigger.dataset.teamCode);
+    const code = teamTrigger.dataset.teamCode;
+    if (code) {
+      openTeamModal(code);
+    }
     return;
   }
 
-  const actionTrigger = target.closest("[data-share-action]");
-  if (!(actionTrigger instanceof HTMLElement)) {
-    return;
-  }
-
-  if (actionTrigger.dataset.shareAction === "copy") {
-    await copyShareSnapshot();
-  }
-  if (actionTrigger.dataset.shareAction === "download") {
-    downloadRunSnapshot();
+  const shareTrigger = target.closest("[data-share-action]");
+  if (shareTrigger instanceof HTMLElement) {
+    if (shareTrigger.dataset.shareAction === "copy") {
+      await copyShareSnapshot();
+    }
+    if (shareTrigger.dataset.shareAction === "download") {
+      downloadRunSnapshot();
+    }
   }
 });
 
 function formatPercent(value) {
-  return `${(value * 100).toFixed(1)}%`;
+  return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
 function formatSigned(value, decimals = 3) {
-  const prefix = value >= 0 ? "+" : "";
-  return `${prefix}${Number(value).toFixed(decimals)}`;
+  const number = Number(value);
+  return `${number >= 0 ? "+" : ""}${number.toFixed(decimals)}`;
 }
 
 function escapeHtml(value) {
@@ -158,26 +182,10 @@ function escapeHtml(value) {
 
 function buildSubdivisionFlag(code) {
   if (code === "gb-eng") {
-    return String.fromCodePoint(
-      0x1f3f4,
-      0xe0067,
-      0xe0062,
-      0xe0065,
-      0xe006e,
-      0xe0067,
-      0xe007f
-    );
+    return String.fromCodePoint(0x1f3f4, 0xe0067, 0xe0062, 0xe0065, 0xe006e, 0xe0067, 0xe007f);
   }
   if (code === "gb-sct") {
-    return String.fromCodePoint(
-      0x1f3f4,
-      0xe0067,
-      0xe0062,
-      0xe0073,
-      0xe0063,
-      0xe0074,
-      0xe007f
-    );
+    return String.fromCodePoint(0x1f3f4, 0xe0067, 0xe0062, 0xe0073, 0xe0063, 0xe0074, 0xe007f);
   }
   return "";
 }
@@ -210,6 +218,20 @@ function teamBadgeUrl(team) {
   return TEAM_BADGE_ASSETS[team.code] || "";
 }
 
+function defaultSortDirection(column) {
+  if (["name", "group", "fifaRank", "expectedFinish", "avgGoalsAgainst", "avgTravelLoad"].includes(column)) {
+    return "asc";
+  }
+  return "desc";
+}
+
+function setText(id, value) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
 function getTeam(code) {
   return state.teamProfiles[code] || state.teamIndex[code] || null;
 }
@@ -240,9 +262,7 @@ function renderTeamIdentity(team, metaText = "") {
       </div>
       <div class="team-text">
         <strong>${escapeHtml(team.name)}</strong>
-        <span class="team-meta">
-          ${escapeHtml(team.code)} | ${escapeHtml(team.confederation)}${metaText ? ` | ${escapeHtml(metaText)}` : ""}
-        </span>
+        <span class="team-meta">${escapeHtml(team.code)} | ${escapeHtml(team.confederation)}${metaText ? ` | ${escapeHtml(metaText)}` : ""}</span>
       </div>
     </div>
   `;
@@ -258,26 +278,16 @@ function renderTeamButton(team, metaText = "", className = "team-button") {
 
 function renderHero(metadata) {
   const chips = document.getElementById("hero-chips");
-  chips.innerHTML = "";
-  [
+  const labels = [
     metadata.format,
     metadata.dates,
     `${metadata.teams.length} qualified teams`,
     `${metadata.groups.length} groups`,
     `FIFA rank snapshot ${metadata.rankingDate}`,
-  ].forEach((label) => {
-    const chip = document.createElement("span");
-    chip.className = "hero-chip";
-    chip.textContent = label;
-    chips.appendChild(chip);
-  });
-}
-
-function setText(id, value) {
-  const element = document.getElementById(id);
-  if (element) {
-    element.textContent = value;
-  }
+  ];
+  chips.innerHTML = labels
+    .map((label) => `<span class="fact-chip">${escapeHtml(label)}</span>`)
+    .join("");
 }
 
 function renderSummary(summary) {
@@ -286,50 +296,50 @@ function renderSummary(summary) {
     {
       label: "Favorite",
       value: summary.favorite.name,
-      subtext: `FIFA #${summary.favorite.fifaRank} | ${formatPercent(summary.favorite.probability)} title probability`,
+      subtext: `FIFA #${summary.favorite.fifaRank} · ${formatPercent(summary.favorite.probability)} title`,
     },
     {
       label: "Dark Horse",
       value: summary.darkHorse.name,
-      subtext: `FIFA #${summary.darkHorse.fifaRank} | ${formatPercent(summary.darkHorse.probability)} title probability`,
+      subtext: `FIFA #${summary.darkHorse.fifaRank} · ${formatPercent(summary.darkHorse.probability)} title`,
     },
     {
-      label: "Goals per Match",
+      label: "Goals / Match",
       value: summary.averageGoalsPerMatch.toFixed(2),
-      subtext: "Average output across all simulated tournament matches.",
+      subtext: "Average across the simulation slate",
     },
     {
-      label: "Most Common Final",
-      value: `${summary.mostCommonFinal.teams[0]} vs ${summary.mostCommonFinal.teams[1]}`,
-      subtext: `${formatPercent(summary.mostCommonFinal.probability)} of the full run set`,
+      label: "Upset Rate",
+      value: formatPercent(summary.upsetRate),
+      subtext: "Lower-rated side wins",
     },
   ];
 
   grid.innerHTML = cards
     .map(
       (card) => `
-        <article class="metric-card">
-          <div class="metric-label">${escapeHtml(card.label)}</div>
-          <div class="metric-value">${escapeHtml(card.value)}</div>
-          <div class="metric-subtext">${escapeHtml(card.subtext)}</div>
-        </article>
+        <div class="stat-cell">
+          <div class="stat-label">${escapeHtml(card.label)}</div>
+          <div class="stat-val">${escapeHtml(card.value)}</div>
+          <div class="stat-sub">${escapeHtml(card.subtext)}</div>
+        </div>
       `
     )
     .join("");
 }
 
 function renderBreakdownRows(items) {
-  const maxContribution = Math.max(...items.map((item) => item.contribution), 0.01);
+  const maxContribution = Math.max(...items.map((item) => Number(item.contribution)), 0.01);
   return items
     .map(
       (item) => `
         <div class="breakdown-row">
-          <div class="breakdown-copy">
+          <div class="breakdown-row-top">
             <span>${escapeHtml(item.label)}</span>
-            <strong>${item.contribution.toFixed(2)}</strong>
+            <strong>${Number(item.contribution).toFixed(2)}</strong>
           </div>
           <div class="breakdown-track">
-            <div class="breakdown-fill" style="width:${(item.contribution / maxContribution) * 100}%"></div>
+            <div class="breakdown-fill" style="width:${(Number(item.contribution) / maxContribution) * 100}%"></div>
           </div>
         </div>
       `
@@ -339,89 +349,82 @@ function renderBreakdownRows(items) {
 
 function renderSimpleMetricList(title, items, kind = "value") {
   return `
-    <div class="mini-panel">
-      <h4>${escapeHtml(title)}</h4>
-      ${items
-        .map((item) => {
-          const value =
-            kind === "percent"
-              ? formatPercent(item.probability)
-              : Number(item.value).toFixed(1);
-          return `
-            <div class="mini-row">
-              <span>${escapeHtml(item.label || item.stage || item.opponent)}</span>
-              <strong>${escapeHtml(value)}</strong>
-            </div>
-          `;
-        })
-        .join("")}
+    <div class="panel-card">
+      <div class="mini-head">
+        <h3>${escapeHtml(title)}</h3>
+      </div>
+      <div class="mini-stack">
+        ${items
+          .map((item) => {
+            const label = item.label || item.stage || item.opponent;
+            const value = kind === "percent" ? formatPercent(item.probability) : Number(item.value).toFixed(1);
+            return `
+              <div class="mini-row">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
     </div>
   `;
 }
 
 function renderFeaturedTeam(featuredTeam) {
-  setText(
-    "featured-heading",
-    `Group ${featuredTeam.group} | FIFA #${featuredTeam.fifaRank} | ${featuredTeam.style}`
-  );
+  setText("featured-heading", `Group ${featuredTeam.group} · FIFA #${featuredTeam.fifaRank} · ${featuredTeam.style}`);
 
   const container = document.getElementById("featured-team-card");
   container.innerHTML = `
     <div class="featured-topline">
-      ${renderTeamButton(featuredTeam, `Group ${featuredTeam.group} | FIFA #${featuredTeam.fifaRank}`, "team-button featured-team-button")}
-      <button type="button" class="secondary-button" data-team-code="${escapeHtml(featuredTeam.code)}">Open team page</button>
+      ${renderTeamButton(featuredTeam, `Group ${featuredTeam.group} | FIFA #${featuredTeam.fifaRank}`)}
+      <button type="button" class="mini-button" data-team-code="${escapeHtml(featuredTeam.code)}">Open Team Page</button>
     </div>
-    <div class="featured-meta">
-      <span class="meta-pill">FIFA #${featuredTeam.fifaRank}</span>
-      <span class="meta-pill">Anchor ${featuredTeam.rankingAnchor.toFixed(1)}</span>
-      <span class="meta-pill">Power ${featuredTeam.power.toFixed(1)}</span>
-      <span class="meta-pill">${escapeHtml(featuredTeam.style)}</span>
-      <span class="meta-pill">Group ${featuredTeam.group}</span>
+    <div class="featured-tags">
+      <span class="mini-tag">Anchor ${featuredTeam.rankingAnchor.toFixed(1)}</span>
+      <span class="mini-tag">Power ${featuredTeam.power.toFixed(1)}</span>
+      <span class="mini-tag">${escapeHtml(featuredTeam.style)}</span>
+      <span class="mini-tag">${escapeHtml(featuredTeam.confederation)}</span>
     </div>
-    <div class="feature-metrics">
+    <div class="featured-metrics">
       <div class="feature-metric">
-        Advance
+        <span>Advance</span>
         <strong>${formatPercent(featuredTeam.advanceProbability)}</strong>
       </div>
       <div class="feature-metric">
-        Quarterfinal
+        <span>Quarterfinal</span>
         <strong>${formatPercent(featuredTeam.quarterfinalProbability)}</strong>
       </div>
       <div class="feature-metric">
-        Win
+        <span>Win</span>
         <strong>${formatPercent(featuredTeam.championProbability)}</strong>
       </div>
       <div class="feature-metric">
-        Avg Pts
+        <span>Avg Pts</span>
         <strong>${featuredTeam.avgGroupPoints.toFixed(2)}</strong>
       </div>
     </div>
-    <div class="featured-insight-grid">
-      <div class="mini-panel">
-        <h4>Why this team?</h4>
-        ${renderBreakdownRows(featuredTeam.powerBreakdown)}
+    <div class="featured-lower">
+      <div class="panel-card">
+        <div class="mini-head">
+          <h3>Why This Team?</h3>
+        </div>
+        <div class="breakdown-grid">${renderBreakdownRows(featuredTeam.powerBreakdown)}</div>
       </div>
-      <div class="mini-stack">
-        ${renderSimpleMetricList("Strengths", featuredTeam.strengths)}
-        ${renderSimpleMetricList("Risks", featuredTeam.risks)}
-      </div>
-      <div class="mini-stack">
-        ${renderSimpleMetricList(
-          "Most Likely Knockout Opponents",
-          featuredTeam.commonOpponents.map((item) => ({
-            label: `${item.stage}: ${item.opponent}`,
-            probability: item.probability,
-          })),
-          "percent"
-        )}
-      </div>
+      ${renderSimpleMetricList("Strengths", featuredTeam.strengths)}
+      ${renderSimpleMetricList(
+        "Likely KO Opponents",
+        featuredTeam.commonOpponents.map((item) => ({
+          label: `${item.stage}: ${item.opponent}`,
+          probability: item.probability,
+        })),
+        "percent"
+      )}
     </div>
   `;
 
   const notes = document.getElementById("model-notes");
-  notes.innerHTML = featuredTeam.notes
-    .map((note) => `<div class="note-item">${escapeHtml(note)}</div>`)
-    .join("");
+  notes.innerHTML = featuredTeam.notes.map((note) => `<div class="note-item">${escapeHtml(note)}</div>`).join("");
 }
 
 function renderScenarioCompare(rows) {
@@ -429,22 +432,20 @@ function renderScenarioCompare(rows) {
   container.innerHTML = rows
     .map(
       (row) => `
-        <article class="compare-card ${row.active ? "active" : ""}">
-          <div class="compare-label-row">
-            <span class="metric-label">${escapeHtml(row.label)}</span>
-            ${row.active ? '<span class="active-tag">Current</span>' : ""}
+        <article class="scenario-card ${row.active ? "active" : ""}">
+          <div class="scenario-card-top">
+            <span class="scenario-label">${escapeHtml(row.label)}</span>
+            ${row.active ? '<span class="current-tag">Current</span>' : ""}
           </div>
-          <div class="compare-value">${formatPercent(row.titleProbability)}</div>
-          <div class="metric-subtext">${escapeHtml(row.featuredTeam)} title odds</div>
-          <div class="compare-metrics">
+          <div class="scenario-value">${formatPercent(row.titleProbability)}</div>
+          <div class="scenario-sub">${escapeHtml(row.featuredTeam)} title odds</div>
+          <div class="scenario-mini">
             <div><span>Advance</span><strong>${formatPercent(row.advanceProbability)}</strong></div>
             <div><span>Semifinal</span><strong>${formatPercent(row.semifinalProbability)}</strong></div>
             <div><span>Goals / Match</span><strong>${row.averageGoalsPerMatch.toFixed(2)}</strong></div>
             <div><span>Upset Rate</span><strong>${formatPercent(row.upsetRate)}</strong></div>
           </div>
-          <div class="compare-footer">
-            Favorite: ${escapeHtml(row.fieldFavorite)} (${formatPercent(row.favoriteProbability)})
-          </div>
+          <div class="scenario-footer">Favorite: ${escapeHtml(row.fieldFavorite)} (${formatPercent(row.favoriteProbability)})</div>
         </article>
       `
     )
@@ -454,16 +455,13 @@ function renderScenarioCompare(rows) {
 function renderShareCard(shareCard) {
   const container = document.getElementById("share-card");
   container.innerHTML = `
-    <div class="share-header">
-      <h3>${escapeHtml(shareCard.title)}</h3>
-      <p id="share-status">Ready to copy or download.</p>
-    </div>
     <div class="share-lines">
+      <div class="share-status" id="share-status">Ready to copy or download.</div>
       ${shareCard.lines.map((line) => `<div class="share-line">${escapeHtml(line)}</div>`).join("")}
     </div>
     <div class="share-actions">
-      <button type="button" class="secondary-button" data-share-action="copy">Copy Summary</button>
-      <button type="button" class="secondary-button" data-share-action="download">Download JSON</button>
+      <button type="button" class="mini-button" data-share-action="copy">Copy Summary</button>
+      <button type="button" class="mini-button" data-share-action="download">Download JSON</button>
     </div>
   `;
 }
@@ -472,25 +470,25 @@ function renderUpsetTracker(upsetTracker) {
   const biggest = upsetTracker.biggestUpsetCandidate;
   const container = document.getElementById("upset-tracker");
   container.innerHTML = `
-    <div class="signal-header">
+    <div class="signal-head">
       <h3>Upset Tracker</h3>
-      <p>Where the bracket feels fragile instead of stable.</p>
+      <p>Where the bracket feels fragile.</p>
     </div>
-    <div class="signal-body">
-      <div class="signal-stat">
-        <span>Biggest upset candidate</span>
+    <div class="signal-stack">
+      <div class="signal-row">
+        <span>Biggest Upset Candidate</span>
         <strong>${biggest ? `${escapeHtml(biggest.winner)} over ${escapeHtml(biggest.loser)}` : "No signal yet"}</strong>
-        ${biggest ? `<small>${escapeHtml(biggest.stage)} | ${formatPercent(biggest.probability)} | ${biggest.powerGap.toFixed(1)} power gap</small>` : ""}
+        ${biggest ? `<small>${escapeHtml(biggest.stage)} · ${formatPercent(biggest.probability)} · ${biggest.powerGap.toFixed(1)} power gap</small>` : ""}
       </div>
-      <div class="signal-stat">
-        <span>Most volatile group</span>
+      <div class="signal-row">
+        <span>Most Volatile Group</span>
         <strong>Group ${escapeHtml(upsetTracker.mostVolatileGroup.group)}</strong>
-        <small>Volatility ${upsetTracker.mostVolatileGroup.volatilityIndex.toFixed(3)} | table repeat ${formatPercent(upsetTracker.mostVolatileGroup.mostLikelyTableProbability)}</small>
+        <small>Volatility ${upsetTracker.mostVolatileGroup.volatilityIndex.toFixed(3)} · table repeat ${formatPercent(upsetTracker.mostVolatileGroup.mostLikelyTableProbability)}</small>
       </div>
-      <div class="signal-stat">
-        <span>Most fragile favorite</span>
+      <div class="signal-row">
+        <span>Fragile Favorite</span>
         <strong>${escapeHtml(upsetTracker.fragileFavorite.name)}</strong>
-        <small>Advance ${formatPercent(upsetTracker.fragileFavorite.advanceProbability)} | QF ${formatPercent(upsetTracker.fragileFavorite.quarterfinalProbability)} | Win ${formatPercent(upsetTracker.fragileFavorite.championProbability)}</small>
+        <small>Advance ${formatPercent(upsetTracker.fragileFavorite.advanceProbability)} · QF ${formatPercent(upsetTracker.fragileFavorite.quarterfinalProbability)} · Win ${formatPercent(upsetTracker.fragileFavorite.championProbability)}</small>
       </div>
     </div>
   `;
@@ -499,15 +497,15 @@ function renderUpsetTracker(upsetTracker) {
 function renderVenueLens(venueLens) {
   const container = document.getElementById("venue-lens");
   container.innerHTML = `
-    <div class="signal-header">
+    <div class="signal-head">
       <h3>Venue + Travel</h3>
       <p>${escapeHtml(venueLens.headline)}</p>
     </div>
-    <div class="signal-card-grid">
+    <div class="signal-stack">
       ${venueLens.cards
         .map(
           (card) => `
-            <div class="venue-chip-card">
+            <div class="venue-chip">
               <span>${escapeHtml(card.label)}</span>
               <strong>${escapeHtml(card.value)}</strong>
               <small>${escapeHtml(card.detail)}</small>
@@ -516,50 +514,42 @@ function renderVenueLens(venueLens) {
         )
         .join("")}
     </div>
-    <div class="note-list dark-notes">
-      ${venueLens.notes.map((note) => `<div class="note-item">${escapeHtml(note)}</div>`).join("")}
-    </div>
   `;
 }
 
 function renderModelInfo(modelInfo) {
   const container = document.getElementById("model-credibility");
   container.innerHTML = `
-    <div class="signal-header">
+    <div class="signal-head">
       <h3>${escapeHtml(modelInfo.headline)}</h3>
-      <p>Compact credibility layer for how the outputs are built.</p>
+      <p>Compact credibility layer for the model.</p>
     </div>
-    <details class="credibility-drawer" open>
-      <summary>Open model assumptions</summary>
-      <div class="drawer-section">
-        <h4>Simulation Flow</h4>
-        <ul>
-          ${modelInfo.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}
-        </ul>
-      </div>
-      <div class="drawer-section">
-        <h4>Assumptions</h4>
-        <ul>
-          ${modelInfo.assumptions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
-        </ul>
+    <details open>
+      <summary>Open Model Assumptions</summary>
+      <div class="drawer-copy">
+        <strong>Simulation flow</strong>
+        <ul>${modelInfo.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ul>
+        <strong>Assumptions</strong>
+        <ul>${modelInfo.assumptions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </div>
     </details>
   `;
 }
 
 function renderChampionOdds(rows) {
-  const maxProbability = Math.max(...rows.map((row) => row.probability), 0.001);
   const container = document.getElementById("champion-odds");
+  const maxProbability = Math.max(...rows.map((row) => Number(row.probability)), 0.001);
   container.innerHTML = rows
     .slice(0, 16)
     .map(
-      (row) => `
+      (row, index) => `
         <div class="odds-row">
-          <div class="odds-label">${renderTeamButton(row, `Group ${row.group} | FIFA #${row.fifaRank}`, "team-button")}</div>
-          <div class="odds-track">
-            <div class="odds-fill" style="width:${(row.probability / maxProbability) * 100}%"></div>
+          <div class="odds-rank">${index + 1}</div>
+          <div class="odds-label">${renderTeamButton(row, `Group ${row.group} | FIFA #${row.fifaRank}`)}</div>
+          <div class="odds-bar-wrap">
+            <div class="odds-bar" style="width:${(Number(row.probability) / maxProbability) * 100}%"></div>
           </div>
-          <div class="odds-value">${formatPercent(row.probability)}</div>
+          <div class="odds-pct">${formatPercent(row.probability)}</div>
         </div>
       `
     )
@@ -572,51 +562,22 @@ function renderGroupOutlook(groups) {
     .map(
       (group) => `
         <article class="group-card">
-          <div class="group-card-header">
-            <div>
-              <h3>Group ${group.group}</h3>
-              <p>${escapeHtml(group.venue.city)}, ${escapeHtml(group.venue.country)} | ${escapeHtml(group.venue.climate)} | ${group.venue.altitudeM}m</p>
-            </div>
-            <div class="group-stat-badge">
-              <span>Volatility</span>
-              <strong>${group.volatilityIndex.toFixed(3)}</strong>
-            </div>
+          <div class="group-head">
+            <div class="group-letter">Group ${escapeHtml(group.group)}</div>
+            <div class="group-meta">Avg power ${group.averagePower.toFixed(1)}<br>Vol ${group.volatilityIndex.toFixed(3)}</div>
           </div>
-          <div class="group-subnote">
-            Most likely table repeats ${formatPercent(group.mostLikelyTableProbability)} of runs.
-          </div>
-          <div class="group-likely-table">
-            ${group.mostLikelyTable
-              .map(
-                (team, index) => `
-                  <div class="likely-slot">
-                    <span>${index + 1}</span>
-                    <strong>${escapeHtml(team.name)}</strong>
-                  </div>
-                `
-              )
-              .join("")}
-          </div>
-          <div class="group-table">
-            <div class="group-table-head">
-              <span>Expected Table</span>
-              <span>Adv</span>
-              <span>Pts</span>
-            </div>
-            ${group.teams
-              .map(
-                (team) => `
-                  <div class="group-row">
-                    <div>
-                      ${renderTeamButton(team, `Exp ${team.expectedFinish.toFixed(2)} | GF ${team.avgGF.toFixed(2)} | GA ${team.avgGA.toFixed(2)}`, "team-button")}
-                    </div>
-                    <div class="group-number">${formatPercent(team.advanceProbability)}</div>
-                    <div class="group-number">${team.avgPoints.toFixed(2)}</div>
-                  </div>
-                `
-              )
-              .join("")}
-          </div>
+          <div class="group-note">${escapeHtml(group.venue.city)}, ${escapeHtml(group.venue.country)} · ${escapeHtml(group.venue.climate)} · most likely table ${formatPercent(group.mostLikelyTableProbability)}</div>
+          ${group.teams
+            .map(
+              (team) => `
+                <div class="group-row">
+                  <div>${renderTeamButton(team, `FIFA #${team.fifaRank} | Exp ${team.expectedFinish.toFixed(2)}`)}</div>
+                  <div class="group-adv">${formatPercent(team.advanceProbability)}</div>
+                  <div class="group-pts">${team.avgPoints.toFixed(2)}</div>
+                </div>
+              `
+            )
+            .join("")}
         </article>
       `
     )
@@ -627,39 +588,34 @@ function renderBracket(sampleTournament) {
   const container = document.getElementById("sample-bracket");
   const champion = state.teamIndex[sampleTournament.champion]?.name || sampleTournament.champion;
   const runnerUp = state.teamIndex[sampleTournament.runner_up]?.name || sampleTournament.runner_up;
-  setText(
-    "sample-summary",
-    `${champion} beat ${runnerUp} in the current sample run and lifted the trophy in ${sampleTournament.finalVenue.city}.`
-  );
+  const finalMatch = sampleTournament.rounds[sampleTournament.rounds.length - 1].matches[0];
+
+  setText("sample-summary", `${champion} beat ${runnerUp} in this sample run and lifted the trophy in ${sampleTournament.finalVenue.city}.`);
 
   document.getElementById("sample-callout").innerHTML = `
-    <div class="sample-hero-card">
-      <div>
-        <span class="metric-label">Sample champion</span>
-        <strong>${escapeHtml(champion)}</strong>
-        <p>${escapeHtml(sampleTournament.finalVenue.city)}, ${escapeHtml(sampleTournament.finalVenue.country)} | ${escapeHtml(sampleTournament.finalVenue.climate)}</p>
-      </div>
-      <div>
-        <span class="metric-label">Runner-up</span>
-        <strong>${escapeHtml(runnerUp)}</strong>
-        <p>Final score: ${escapeHtml(sampleTournament.rounds[sampleTournament.rounds.length - 1].matches[0].scoreline)}</p>
-      </div>
-      <div>
-        <span class="metric-label">Best 3rd Place Cut</span>
-        <strong>${sampleTournament.thirdPlaceTable.filter((team) => team.qualified).length} teams</strong>
-        <p>${sampleTournament.thirdPlaceTable.filter((team) => team.qualified).map((team) => escapeHtml(team.code)).join(" | ")}</p>
-      </div>
+    <div class="sample-info">
+      <span class="sample-label">Sample Champion</span>
+      <strong>${escapeHtml(champion)}</strong>
+      <p>${escapeHtml(sampleTournament.finalVenue.city)}, ${escapeHtml(sampleTournament.finalVenue.country)} · ${escapeHtml(sampleTournament.finalVenue.climate)}</p>
+    </div>
+    <div class="sample-info">
+      <span class="sample-label">Runner-Up</span>
+      <strong>${escapeHtml(runnerUp)}</strong>
+      <p>Final score: ${escapeHtml(finalMatch.scoreline)}</p>
+    </div>
+    <div class="sample-info">
+      <span class="sample-label">Best 3rd Place Cut</span>
+      <strong>${sampleTournament.thirdPlaceTable.filter((team) => team.qualified).length} teams</strong>
+      <p>${sampleTournament.thirdPlaceTable.filter((team) => team.qualified).map((team) => escapeHtml(team.code)).join(" · ")}</p>
     </div>
   `;
 
   container.innerHTML = sampleTournament.rounds
-    .map(
-      (round) => `
-        <section class="bracket-round">
-          <div class="bracket-round-header">
-            <h3>${escapeHtml(round.round)}</h3>
-            <span>${round.matches.length} matches</span>
-          </div>
+    .map((round, index) => {
+      const finalColumn = index === sampleTournament.rounds.length - 1;
+      return `
+        <div class="round">
+          <div class="round-label">${escapeHtml(round.round)}</div>
           ${round.matches
             .map((match) => {
               const homeTeam = getTeam(match.homeCode) || {
@@ -675,26 +631,24 @@ function renderBracket(sampleTournament) {
                 flagCode: "",
               };
               return `
-                <div class="bracket-match ${match.winner ? "has-winner" : ""}">
-                  <div class="match-line ${match.winner === match.homeCode ? "winner" : ""}">
-                    ${renderTeamButton(homeTeam, "", "team-button match-team-button")}
-                    <strong>${match.homeGoals}</strong>
+                <div class="match ${finalColumn ? "final-match" : ""}">
+                  <div class="match-team ${match.winner === match.homeCode ? "winner" : ""}">
+                    ${renderTeamButton(homeTeam, "", "team-button")}
+                    <div class="match-score">${match.homeGoals}</div>
                   </div>
-                  <div class="match-line ${match.winner === match.awayCode ? "winner" : ""}">
-                    ${renderTeamButton(awayTeam, "", "team-button match-team-button")}
-                    <strong>${match.awayGoals}</strong>
+                  <div class="match-team ${match.winner === match.awayCode ? "winner" : ""}">
+                    ${renderTeamButton(awayTeam, "", "team-button")}
+                    <div class="match-score">${match.awayGoals}</div>
                   </div>
-                  <div class="match-meta">
-                    <span>${escapeHtml(match.venue.city)}, ${escapeHtml(match.venue.country)}</span>
-                    <span>${escapeHtml(match.scoreline)}</span>
-                  </div>
+                  <div class="match-winner-tag">${escapeHtml(match.venue.city)} · ${escapeHtml(match.scoreline)}</div>
                 </div>
               `;
             })
             .join("")}
-        </section>
-      `
-    )
+          ${finalColumn ? `<div class="champion-badge">Sample Champion<span class="champion-name">${escapeHtml(champion)}</span></div>` : ""}
+        </div>
+      `;
+    })
     .join("");
 
   renderFeaturedPath(sampleTournament.featuredPath || []);
@@ -703,7 +657,7 @@ function renderBracket(sampleTournament) {
 function renderFeaturedPath(path) {
   const container = document.getElementById("featured-path");
   if (!path.length) {
-    container.innerHTML = "<div class=\"empty-state\">Run a simulation to see the selected team's path.</div>";
+    container.innerHTML = `<div class="share-status">Run a simulation to see the selected team's path.</div>`;
     return;
   }
 
@@ -714,7 +668,7 @@ function renderFeaturedPath(path) {
           <div class="path-stage">${escapeHtml(entry.stage)}</div>
           <div class="path-body">
             <strong>${escapeHtml(entry.opponent)}</strong>
-            <span>${escapeHtml(entry.scoreline)} | ${escapeHtml(entry.result)} | ${escapeHtml(entry.venueLabel)}</span>
+            <span>${escapeHtml(entry.scoreline)} · ${escapeHtml(entry.result)} · ${escapeHtml(entry.venueLabel)}</span>
           </div>
         </div>
       `
@@ -722,27 +676,86 @@ function renderFeaturedPath(path) {
     .join("");
 }
 
+function probabilityCell(value, fillClass, highlight = false) {
+  return `
+    <div class="prob-cell">
+      <div class="pct-b"><div class="pct-f ${fillClass}" style="width:${Math.min(Number(value) * 100, 100)}%"></div></div>
+      <span class="pct-n ${highlight ? "win-n" : ""}">${formatPercent(value)}</span>
+    </div>
+  `;
+}
+
+function sortMatrixRows(rows) {
+  const direction = state.matrixSort.direction === "asc" ? 1 : -1;
+  const column = state.matrixSort.column;
+  const sorted = [...rows];
+  sorted.sort((left, right) => {
+    const leftValue = left[column];
+    const rightValue = right[column];
+    if (typeof leftValue === "string" || typeof rightValue === "string") {
+      return String(leftValue).localeCompare(String(rightValue)) * direction;
+    }
+    return (Number(leftValue) - Number(rightValue)) * direction;
+  });
+  return sorted;
+}
+
+function renderMatrixHeaders() {
+  matrixHeaders.forEach((header) => {
+    const active = header.dataset.sort === state.matrixSort.column;
+    header.classList.toggle("active", active);
+    const label = header.textContent.replace(/[↑↓]/g, "").trim();
+    header.innerHTML = `${escapeHtml(label)}${active ? `<span class="sort-arrow">${state.matrixSort.direction === "asc" ? "↑" : "↓"}</span>` : ""}`;
+  });
+}
+
 function renderTeamTable(rows) {
   const body = document.getElementById("team-table");
-  body.innerHTML = rows
+  const sortedRows = sortMatrixRows(rows);
+  renderMatrixHeaders();
+  body.innerHTML = sortedRows
     .map(
       (row) => `
         <tr>
-          <td>${renderTeamButton(row, "", "team-button table-team-button")}</td>
-          <td>${row.group}</td>
-          <td>${row.fifaRank}</td>
-          <td>${row.power.toFixed(1)}</td>
-          <td class="cell-probability">${formatPercent(row.advanceProbability)}</td>
-          <td class="cell-probability">${formatPercent(row.quarterfinalProbability)}</td>
-          <td class="cell-probability">${formatPercent(row.championProbability)}</td>
-          <td>${row.expectedFinish.toFixed(2)}</td>
-          <td>${row.avgGoalsFor.toFixed(2)}</td>
-          <td>${row.avgGoalsAgainst.toFixed(2)}</td>
-          <td>${row.avgTravelLoad.toFixed(3)}</td>
+          <td class="table-team">${renderTeamButton(row, "", "team-button")}</td>
+          <td class="num">${row.fifaRank}</td>
+          <td class="num"><span class="grp-b">${escapeHtml(row.group)}</span></td>
+          <td class="num"><span class="pow-v">${row.power.toFixed(1)}</span></td>
+          <td class="num">${probabilityCell(row.advanceProbability, "f-adv")}</td>
+          <td class="num">${probabilityCell(row.quarterfinalProbability, "f-qf")}</td>
+          <td class="num">${probabilityCell(row.semifinalProbability, "f-sf")}</td>
+          <td class="num">${probabilityCell(row.championProbability, "f-win", true)}</td>
+          <td class="num"><span class="pts-v">${row.avgGroupPoints.toFixed(2)}</span></td>
+          <td class="num">${row.expectedFinish.toFixed(2)}</td>
+          <td class="num">${row.avgGoalsFor.toFixed(2)}</td>
+          <td class="num">${row.avgGoalsAgainst.toFixed(2)}</td>
+          <td class="num">${row.avgTravelLoad.toFixed(3)}</td>
         </tr>
       `
     )
     .join("");
+}
+
+function renderTeamModalList(title, items, kind = "value") {
+  return `
+    <div class="panel-card">
+      <div class="mini-head"><h3>${escapeHtml(title)}</h3></div>
+      <div class="mini-stack">
+        ${items
+          .map((item) => {
+            const label = item.label || item.stage || item.opponent;
+            const value = kind === "percent" ? formatPercent(item.probability) : Number(item.value).toFixed(1);
+            return `
+              <div class="mini-row">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
 }
 
 function openTeamModal(code) {
@@ -756,7 +769,7 @@ function openTeamModal(code) {
       ${renderTeamIdentity(profile, `Group ${profile.group} | FIFA #${profile.fifaRank}`)}
       <div class="modal-header-copy">
         <h2 id="team-modal-title">${escapeHtml(profile.name)}</h2>
-        <p>${escapeHtml(profile.style)} | ${escapeHtml(profile.confederation)} | Power ${profile.power.toFixed(1)}</p>
+        <p>${escapeHtml(profile.style)} · ${escapeHtml(profile.confederation)} · Power ${profile.power.toFixed(1)} · travel ${profile.avgTravelLoad.toFixed(3)} · venue edge ${formatSigned(profile.avgVenueEdge)}</p>
       </div>
     </div>
     <div class="modal-metrics">
@@ -770,48 +783,41 @@ function openTeamModal(code) {
       <div class="feature-metric"><span>Venue Edge</span><strong>${formatSigned(profile.avgVenueEdge)}</strong></div>
     </div>
     <div class="modal-grid">
-      <div class="mini-panel">
-        <h4>Power Breakdown</h4>
-        ${renderBreakdownRows(profile.powerBreakdown)}
+      <div class="panel-card">
+        <div class="mini-head"><h3>Power Breakdown</h3></div>
+        <div class="breakdown-grid">${renderBreakdownRows(profile.powerBreakdown)}</div>
       </div>
-      <div class="mini-stack">
-        ${renderSimpleMetricList("Strengths", profile.strengths)}
-        ${renderSimpleMetricList("Risks", profile.risks)}
-      </div>
-      <div class="mini-panel">
-        <h4>Likely Knockout Opponents</h4>
-        ${profile.commonOpponents
-          .map(
-            (item) => `
-              <div class="mini-row">
-                <span>${escapeHtml(item.stage)}</span>
-                <strong>${escapeHtml(item.opponent)} ${formatPercent(item.probability)}</strong>
-              </div>
-            `
-          )
-          .join("")}
-      </div>
+      ${renderTeamModalList("Strengths", profile.strengths)}
+      ${renderTeamModalList("Risks", profile.risks)}
     </div>
     <div class="modal-grid">
-      <div class="mini-panel">
-        <h4>Sample Tournament Path</h4>
+      ${renderTeamModalList(
+        "Likely Knockout Opponents",
+        profile.commonOpponents.map((item) => ({
+          label: `${item.stage}: ${item.opponent}`,
+          probability: item.probability,
+        })),
+        "percent"
+      )}
+      <div class="panel-card">
+        <div class="mini-head"><h3>Sample Tournament Path</h3></div>
         ${(profile.samplePath || [])
           .map(
             (entry) => `
-              <div class="path-row compact">
+              <div class="path-row">
                 <div class="path-stage">${escapeHtml(entry.stage)}</div>
                 <div class="path-body">
                   <strong>${escapeHtml(entry.opponent)}</strong>
-                  <span>${escapeHtml(entry.scoreline)} | ${escapeHtml(entry.result)} | ${escapeHtml(entry.venueLabel)}</span>
+                  <span>${escapeHtml(entry.scoreline)} · ${escapeHtml(entry.result)} · ${escapeHtml(entry.venueLabel)}</span>
                 </div>
               </div>
             `
           )
           .join("")}
       </div>
-      <div class="mini-panel">
-        <h4>Scout Notes</h4>
-        ${profile.notes.map((note) => `<div class="note-item">${escapeHtml(note)}</div>`).join("")}
+      <div class="panel-card">
+        <div class="mini-head"><h3>Scout Notes</h3></div>
+        <div class="note-stack">${profile.notes.map((note) => `<div class="note-item">${escapeHtml(note)}</div>`).join("")}</div>
       </div>
     </div>
   `;
@@ -855,8 +861,45 @@ function downloadRunSnapshot() {
   setText("share-status", "Downloaded JSON snapshot.");
 }
 
+function updateNavMeta(data) {
+  const navMeta = document.getElementById("nav-meta");
+  navMeta.textContent = `${data.metadata.iterations} runs · ${data.metadata.scenario} · host adv ${data.metadata.hostAdvantage ? "on" : "off"} · FIFA ${state.metadata.rankingDate}`;
+}
+
+function activateNavLink(hash) {
+  navLinks.forEach((link) => {
+    link.classList.toggle("active", link.getAttribute("href") === hash);
+  });
+}
+
+function setupSectionObserver() {
+  const sections = ["#hero", "#odds", "#groups", "#bracket", "#matrix"]
+    .map((selector) => document.querySelector(selector))
+    .filter(Boolean);
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+      if (visible?.target?.id) {
+        activateNavLink(`#${visible.target.id}`);
+      }
+    },
+    {
+      threshold: [0.2, 0.45, 0.7],
+      rootMargin: "-64px 0px -40% 0px",
+    }
+  );
+
+  sections.forEach((section) => observer.observe(section));
+}
+
 async function runSimulation() {
   buildStatus.textContent = "Running Monte Carlo tournament paths...";
+  runButton.textContent = "Running…";
+  runButton.disabled = true;
+
   const payload = {
     iterations: Number(iterationsInput.value),
     scenario: state.scenario,
@@ -872,17 +915,24 @@ async function runSimulation() {
 
   if (!response.ok) {
     buildStatus.textContent = "Simulation failed.";
+    runButton.textContent = "Run Simulation";
+    runButton.disabled = false;
     return;
   }
 
   const data = await response.json();
   state.latestSimulation = data;
   state.teamProfiles = data.teamProfiles;
+
   buildStatus.textContent = "Ready.";
+  runButton.textContent = "Run Simulation";
+  runButton.disabled = false;
+
   setText(
     "summary-context",
-    `${data.metadata.iterations} runs | ${data.metadata.scenario} scenario | host advantage ${data.metadata.hostAdvantage ? "on" : "off"} | run ${data.metadata.runId}`
+    `${data.metadata.iterations} runs · ${data.metadata.scenario} · host advantage ${data.metadata.hostAdvantage ? "on" : "off"} · run ${data.metadata.runId}`
   );
+  updateNavMeta(data);
 
   renderSummary(data.summary);
   renderFeaturedTeam(data.featuredTeam);
@@ -909,7 +959,6 @@ async function initialize() {
   iterationsInput.value = metadata.defaults.iterations;
   iterationsOutput.textContent = metadata.defaults.iterations;
   state.scenario = metadata.defaults.scenario;
-  setText("build-status", "Model loaded.");
 
   metadata.teams.forEach((team) => {
     const option = document.createElement("option");
@@ -921,6 +970,7 @@ async function initialize() {
     featuredTeamSelect.appendChild(option);
   });
 
+  setupSectionObserver();
   await runSimulation();
 }
 

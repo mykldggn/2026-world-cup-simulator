@@ -4,227 +4,200 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026 World Cup Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+    <nav class="site-nav">
+        <div class="nav-logo">WC26 · SIM</div>
+        <div class="nav-links">
+            <a href="#hero" class="active">Overview</a>
+            <a href="#odds">Odds</a>
+            <a href="#groups">Groups</a>
+            <a href="#bracket">Bracket</a>
+            <a href="#matrix">Matrix</a>
+        </div>
+        <div id="nav-meta" class="nav-meta">Loading tournament model...</div>
+    </nav>
+
     <main>
-        <section class="hero-band">
-            <div class="container hero-grid">
-                <div class="hero-copy">
-                    <img class="hero-trophy" src="/static/assets/trophy/fifa-world-cup.png" alt="" aria-hidden="true">
-                    <div class="hero-prelude">
-                        <p class="eyebrow">World Cup 2026</p>
-                        <div class="host-ribbon" aria-label="Host nations">
-                            <span class="host-pill">
-                                <img class="host-flag" src="/static/assets/flags/us.png" alt="">
-                                United States
-                            </span>
-                            <span class="host-pill">
-                                <img class="host-flag" src="/static/assets/flags/mx.png" alt="">
-                                Mexico
-                            </span>
-                            <span class="host-pill">
-                                <img class="host-flag" src="/static/assets/flags/ca.png" alt="">
-                                Canada
-                            </span>
-                        </div>
-                    </div>
-                    <h1>Hybrid ML/AI tournament simulator built for the 48-team format.</h1>
-                    <p class="hero-text">
-                        Monte Carlo tournament runs, venue-adjusted match models, survival odds, third-place
-                        qualification, knockout paths, and scenario comparisons for the current 2026 field.
-                    </p>
-                    <div class="stage-strip" aria-label="Tournament path">
-                        <div class="stage-card">
-                            <span>Opening Phase</span>
-                            <strong>12 Groups</strong>
-                        </div>
-                        <div class="stage-card">
-                            <span>Wildcard Cut</span>
-                            <strong>Best 3rd Place</strong>
-                        </div>
-                        <div class="stage-card">
-                            <span>Knockout Run</span>
-                            <strong>Round of 32</strong>
-                        </div>
-                        <div class="stage-card">
-                            <span>Final Night</span>
-                            <strong>19 July 2026</strong>
-                        </div>
-                    </div>
-                    <div class="hero-chips" id="hero-chips"></div>
+        <section id="hero" class="hero">
+            <div class="hero-left">
+                <div class="badge-row">
+                    <span class="badge red">World Cup 2026</span>
+                    <span class="badge navy">Hybrid ML/AI</span>
                 </div>
-
-                <form class="control-panel" id="simulation-form">
-                    <div class="panel-header">
-                        <h2>Simulation Controls</h2>
-                        <p id="build-status">Loading tournament model...</p>
-                    </div>
-
-                    <div class="control-row">
-                        <label for="iterations">Iterations</label>
-                        <div class="range-wrap">
-                            <input id="iterations" name="iterations" type="range" min="100" max="2000" step="100" value="400">
-                            <output id="iterations-output" for="iterations">400</output>
-                        </div>
-                    </div>
-
-                    <div class="control-row">
-                        <span>Scenario</span>
-                        <div class="segmented-control" id="scenario-control">
-                            <button type="button" class="scenario-button active" data-scenario="balanced">Balanced</button>
-                            <button type="button" class="scenario-button" data-scenario="chalk">Chalk</button>
-                            <button type="button" class="scenario-button" data-scenario="chaos">Chaos</button>
-                        </div>
-                    </div>
-
-                    <div class="control-row">
-                        <label for="featured-team">Featured team</label>
-                        <select id="featured-team" name="featuredTeam"></select>
-                    </div>
-
-                    <div class="control-row toggle-row">
-                        <div>
-                            <label for="host-advantage">Host advantage</label>
-                            <p class="control-note">Applies a small venue boost to USA, Mexico, and Canada when they play at home.</p>
-                        </div>
-                        <input id="host-advantage" name="hostAdvantage" type="checkbox" checked>
-                    </div>
-
-                    <button type="submit" class="primary-button">Run Simulation</button>
-                </form>
+                <div class="hero-hosts">
+                    <span class="host"><img class="host-flag" src="/static/assets/flags/us.png" alt="">United States</span>
+                    <span class="host"><img class="host-flag" src="/static/assets/flags/mx.png" alt="">Mexico</span>
+                    <span class="host"><img class="host-flag" src="/static/assets/flags/ca.png" alt="">Canada</span>
+                </div>
+                <h1>48-Team<br><em>Tournament</em><br>Simulator</h1>
+                <p class="hero-sub">
+                    Monte Carlo runs, expected group tables, dynamic third-place qualification, venue-aware match
+                    nudges, and a full Round of 32 knockout path for the confirmed 2026 field.
+                </p>
+                <div id="hero-chips" class="hero-facts"></div>
+                <img class="trophy-watermark" src="/static/assets/trophy/fifa-world-cup.png" alt="" aria-hidden="true">
             </div>
-        </section>
 
-        <section class="summary-band">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Simulation Snapshot</h2>
-                    <p id="summary-context">Waiting for the first run...</p>
+            <form id="simulation-form" class="ctrl-panel">
+                <div class="ctrl-title-wrap">
+                    <div class="ctrl-title">Simulation Controls</div>
+                    <p id="build-status" class="ctrl-status">Loading tournament model...</p>
                 </div>
 
-                <div class="summary-grid" id="summary-grid"></div>
+                <div>
+                    <div class="ctrl-label">Iterations</div>
+                    <div class="slider-row">
+                        <input id="iterations" name="iterations" type="range" min="100" max="2000" step="100" value="400">
+                        <span id="iterations-output" class="slider-val">400</span>
+                    </div>
+                </div>
 
-                <div class="featured-grid">
+                <div>
+                    <div class="ctrl-label">Scenario</div>
+                    <div class="chip-row" id="scenario-control">
+                        <button type="button" class="chip active scenario-button" data-scenario="balanced">Balanced</button>
+                        <button type="button" class="chip scenario-button" data-scenario="chalk">Chalk</button>
+                        <button type="button" class="chip scenario-button" data-scenario="chaos">Chaos</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="ctrl-label" for="featured-team">Featured Team</label>
+                    <select id="featured-team" name="featuredTeam"></select>
+                </div>
+
+                <div class="toggle-row">
                     <div>
-                        <div class="section-header compact">
-                            <h3>Featured Team</h3>
-                            <p id="featured-heading"></p>
-                        </div>
-                        <div id="featured-team-card" class="featured-card"></div>
+                        <div class="ctrl-label">Host Advantage</div>
+                        <div class="toggle-note">Small boost when USA, Mexico, or Canada play in-country.</div>
                     </div>
-                    <div>
-                        <div class="section-header compact">
-                            <h3>Model Notes</h3>
-                            <p>What the current mix of tournament runs is signaling.</p>
+                    <input id="host-advantage" name="hostAdvantage" type="checkbox" checked>
+                </div>
+
+                <button type="submit" class="run-btn">Run Simulation</button>
+            </form>
+        </section>
+
+        <section id="snapshot" class="stats-strip">
+            <div id="summary-grid" class="stats-grid"></div>
+        </section>
+
+        <section class="section" id="overview">
+            <div class="sec-head">
+                <div class="sec-title">Simulation Overview</div>
+                <div id="summary-context" class="sec-meta">Waiting for the first run...</div>
+            </div>
+
+            <div class="overview-grid">
+                <div class="overview-main">
+                    <div class="sub-head">
+                        <h2>Featured Team</h2>
+                        <p id="featured-heading"></p>
+                    </div>
+                    <div id="featured-team-card" class="panel-card featured-shell"></div>
+                </div>
+
+                <div class="overview-side">
+                    <div class="mini-grid">
+                        <div class="panel-card">
+                            <div class="mini-head">
+                                <h3>Model Notes</h3>
+                                <p>What the current run mix is signaling.</p>
+                            </div>
+                            <div id="model-notes" class="note-stack"></div>
                         </div>
-                        <div id="model-notes" class="note-list"></div>
+
+                        <div class="panel-card">
+                            <div class="mini-head">
+                                <h3>Scenario Desk</h3>
+                                <p>Same team, different tournament environments.</p>
+                            </div>
+                            <div id="scenario-compare" class="scenario-grid"></div>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="mini-head">
+                                <h3>Save or Share</h3>
+                                <p>Snapshot the current simulation run.</p>
+                            </div>
+                            <div id="share-card"></div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="signals-wrap overview-signals">
+                <div id="upset-tracker" class="signal-card"></div>
+                <div id="venue-lens" class="signal-card"></div>
+                <div id="model-credibility" class="signal-card"></div>
+            </div>
         </section>
 
-        <section class="band band-light">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Scenario Desk</h2>
-                    <p>Compare how the same featured team behaves under different tournament environments.</p>
-                </div>
-                <div class="insight-grid two-up">
-                    <div>
-                        <div id="scenario-compare" class="compare-grid"></div>
+        <section id="odds" class="section">
+            <div class="sec-head">
+                <div class="sec-title">Champion Odds</div>
+                <div class="sec-meta">Top teams by title probability across the current run.</div>
+            </div>
+            <div id="champion-odds" class="odds-list"></div>
+        </section>
+
+        <section id="groups" class="section dark">
+            <div class="sec-head">
+                <div class="sec-title">Group Outlook</div>
+                <div class="sec-meta">Expected finishes, advancement odds, and venue context.</div>
+            </div>
+            <div id="group-outlook" class="groups-grid"></div>
+        </section>
+
+        <section id="bracket" class="section warm">
+            <div class="sec-head">
+                <div class="sec-title">Sample Knockout Bracket</div>
+                <div id="sample-summary" class="sec-meta">One tournament path generated from the latest simulation.</div>
+            </div>
+            <div id="sample-callout" class="sample-callout"></div>
+            <div class="bracket-wrap">
+                <div id="sample-bracket" class="bracket-grid"></div>
+                <aside class="path-column">
+                    <div class="mini-head">
+                        <h3>Featured Path</h3>
+                        <p>One sample route for the selected team.</p>
                     </div>
-                    <div>
-                        <div class="section-header compact">
-                            <h3>Save or Share</h3>
-                            <p>Carry a simulation snapshot with the run ID and headline outputs.</p>
-                        </div>
-                        <div id="share-card" class="share-card"></div>
-                    </div>
-                </div>
+                    <div id="featured-path" class="panel-card path-card"></div>
+                </aside>
             </div>
         </section>
 
-        <section class="band band-dark">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Tournament Signals</h2>
-                    <p>Upset pressure, venue effects, and model assumptions for the current run.</p>
-                </div>
-                <div class="insight-grid three-up">
-                    <div id="upset-tracker" class="signal-card"></div>
-                    <div id="venue-lens" class="signal-card"></div>
-                    <div id="model-credibility" class="signal-card"></div>
-                </div>
+        <section id="matrix" class="section dark">
+            <div class="sec-head">
+                <div class="sec-title">Team Matrix</div>
+                <div class="sec-meta">Sortable full-field table. Click a column to reorder.</div>
             </div>
-        </section>
-
-        <section class="band band-light">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Champion Odds</h2>
-                    <p>Top teams by title probability across the current simulation run.</p>
-                </div>
-                <div id="champion-odds" class="odds-list"></div>
-            </div>
-        </section>
-
-        <section class="band band-dark">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Group Outlook</h2>
-                    <p>Expected group tables, advancement rates, venue context, and section volatility.</p>
-                </div>
-                <div id="group-outlook" class="group-grid"></div>
-            </div>
-        </section>
-
-        <section class="band band-light">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Sample Knockout Bracket</h2>
-                    <p id="sample-summary">One tournament path generated from the same model.</p>
-                </div>
-                <div id="sample-callout" class="sample-callout"></div>
-                <div class="sample-layout">
-                    <div id="sample-bracket" class="bracket-grid"></div>
-                    <aside>
-                        <div class="section-header compact">
-                            <h3>Featured Path</h3>
-                            <p>One run for the selected team, start to finish.</p>
-                        </div>
-                        <div id="featured-path" class="path-card"></div>
-                    </aside>
-                </div>
-            </div>
-        </section>
-
-        <section class="band band-dark">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Team Matrix</h2>
-                    <p>Power score, advancement profile, expected finish, travel, and scoring output for the full field.</p>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Team</th>
-                                <th>Grp</th>
-                                <th>Rank</th>
-                                <th>Power</th>
-                                <th>Advance</th>
-                                <th>QF</th>
-                                <th>Win</th>
-                                <th>Exp Fin</th>
-                                <th>GF</th>
-                                <th>GA</th>
-                                <th>Travel</th>
-                            </tr>
-                        </thead>
-                        <tbody id="team-table"></tbody>
-                    </table>
-                </div>
+            <div class="table-wrap">
+                <table id="matrix-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="name">Team</th>
+                            <th class="num" data-sort="fifaRank">Rank</th>
+                            <th class="num" data-sort="group">Grp</th>
+                            <th class="num" data-sort="power">Power</th>
+                            <th class="num" data-sort="advanceProbability">Advance</th>
+                            <th class="num" data-sort="quarterfinalProbability">QF</th>
+                            <th class="num" data-sort="semifinalProbability">SF</th>
+                            <th class="num" data-sort="championProbability">Win</th>
+                            <th class="num" data-sort="avgGroupPoints">Avg Pts</th>
+                            <th class="num" data-sort="expectedFinish">Exp Fin</th>
+                            <th class="num" data-sort="avgGoalsFor">GF</th>
+                            <th class="num" data-sort="avgGoalsAgainst">GA</th>
+                            <th class="num" data-sort="avgTravelLoad">Travel</th>
+                        </tr>
+                    </thead>
+                    <tbody id="team-table"></tbody>
+                </table>
             </div>
         </section>
     </main>
