@@ -126,8 +126,20 @@ section[id] {
 .hero-left {
     position: relative;
     overflow: hidden;
-    padding: 48px 40px;
+    padding: 48px 270px 48px 40px;
     border-right: 3px solid var(--navy);
+}
+
+.hero-left::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    top: 74px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(232, 191, 74, 0.2) 0%, rgba(232, 191, 74, 0.1) 34%, rgba(232, 191, 74, 0.04) 54%, rgba(232, 191, 74, 0) 74%);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .hero-left > * {
@@ -137,11 +149,12 @@ section[id] {
 
 .trophy-watermark {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    height: 92%;
-    opacity: 0.07;
-    filter: grayscale(1);
+    right: 36px;
+    bottom: -2px;
+    width: auto;
+    height: clamp(325px, 31vw, 430px);
+    opacity: 0.96;
+    filter: drop-shadow(0 20px 28px rgba(131, 87, 0, 0.22));
     pointer-events: none;
     z-index: 0;
 }
@@ -1477,8 +1490,18 @@ summary {
     }
 
     .hero-left {
+        padding: 40px 24px 236px;
         border-right: none;
         border-bottom: 3px solid var(--navy);
+    }
+
+    .hero-left::after {
+        right: 50%;
+        top: auto;
+        bottom: 22px;
+        width: 236px;
+        height: 236px;
+        transform: translateX(50%);
     }
 
     .stats-grid,
@@ -1496,6 +1519,14 @@ summary {
 
     .nav-meta {
         display: none;
+    }
+
+    .trophy-watermark {
+        right: 50%;
+        bottom: 8px;
+        width: auto;
+        height: min(236px, 46vw);
+        transform: translateX(50%);
     }
 }
 
@@ -1526,6 +1557,22 @@ summary {
     .ctrl-panel {
         padding-left: 20px;
         padding-right: 20px;
+    }
+
+    .hero-left {
+        padding-bottom: 180px;
+    }
+
+    .hero-left::after {
+        width: 180px;
+        height: 180px;
+        bottom: 18px;
+    }
+
+    .trophy-watermark {
+        width: auto;
+        height: min(170px, 40vw);
+        bottom: 8px;
     }
 
     .sec-head,
